@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Movie Management</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="mt-4">My Favorite Movies</h1>
+      <div class="d-flex justify-content-between align-items-center">
+        <h2>Add a Movie</h2>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick="handleLogout()"
+        >
+          Log out
+        </button>
+      </div>
+
+      <form id="addMovieForm">
+        <div class="form-group">
+          <label for="movieName">Movie Name:</label>
+          <input type="text" id="movieName" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="rating">Rating:</label>
+          <input type="number" id="rating" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="cast">Cast (comma-separated):</label>
+          <input type="text" id="cast" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="genre">Genre:</label>
+          <input type="text" id="genre" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="releaseDate">Release Date:</label>
+          <input
+            type="datetime-local"
+            id="releaseDate"
+            class="form-control"
+            required
+          />
+        </div>
+        <button type="button" class="btn btn-primary" onclick="addMovie()">
+          Add Movie
+        </button>
+      </form>
+
+      <h2>My Movies</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Movie Name</th>
+            <th>Rating</th>
+            <th>Cast</th>
+            <th>Genre</th>
+            <th>Release Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="movieTableBody"></tbody>
+      </table>
+    </div>
+    <div
+      class="modal fade"
+      id="editMovieModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="editMovieModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editMovieModalLabel">
+              Edit Movie Details
+            </h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- Form for editing movie -->
+            <form id="editMovieForm">
+              <div class="form-group">
+                <label for="editMovieName">Movie Id:</label>
+                <input
+                  type="text"
+                  id="movieId"
+                  class="form-control"
+                  disabled
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="editMovieName">Movie Name:</label>
+                <input
+                  type="text"
+                  id="editMovieName"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="editRating">Rating:</label>
+                <input
+                  type="number"
+                  id="editRating"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="editCast">Cast (comma-separated):</label>
+                <input
+                  type="text"
+                  id="editCast"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="editGenre">Genre:</label>
+                <input
+                  type="text"
+                  id="editGenre"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="editReleaseDate">Release Date:</label>
+                <input
+                  type="datetime-local"
+                  id="editReleaseDate"
+                  class="form-control"
+                  required
+                />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="saveEditedMovie()"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <script>
+      function getCookies() {
+        let cookie = document.cookie;
+        let cookies = cookie.split(";");
+        const result = {};
+        cookies.forEach((item) => {
+          const [key, value] = item.split("=");
+          result[key.trim()] = decodeURIComponent(value);
+        });
+        return result;
+      }
+      let cookie = getCookies();
+
+      if (!cookie.userId && !cookie.email && !cookie.token) {
+        alert("you are not logged in correctly, please try again");
+        window.location.replace("/login");
+      }
+
+      function deleteAllCookies() {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i];
+          const eqPos = cookie.indexOf("=");
+          const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        }
+      }
+
+      function handleLogout() {
+        deleteAllCookies();
+        alert("you have been loged out successffully");
+        window.location.replace("/login");
+      }
+
+      function addMovie() {
+        const movieName = document.getElementById("movieName").value;
+        const rating = document.getElementById("rating").value;
+        const cast = document.getElementById("cast").value.split(",");
+        const genre = document.getElementById("genre").value;
+        const releaseDate = document.getElementById("releaseDate").value;
+        let params = {
+          movieName: movieName,
+          rating: Number(rating),
+          cast: cast,
+          genre: genre,
+          releaseDate: new Date(releaseDate).toISOString(),
+          userId: cookie.userId ? Number(cookie.userId) : "",
+        };
+        fetch("/movies", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: cookie.token ? cookie.token : "",
+          },
+          body: JSON.stringify(params),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert("Movie added successfully!");
+            fetchMovies();
+          })
+          .catch((error) => {
+            console.error("Error adding movie:", error);
+            alert(
+              "An error occurred while adding the movie. Please try again."
+            );
+          });
+      }
+
+      function fetchMovies() {
+        const userId = cookie.userId ? cookie.userId : "";
+        fetch(`/movies/${userId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            const movies = data.data;
+            const tableBody = document.getElementById("movieTableBody");
+            tableBody.innerHTML = "";
+
+            movies.forEach((movie) => {
+              const row = tableBody.insertRow();
+              const cell1 = row.insertCell(0);
+              const cell2 = row.insertCell(1);
+              const cell3 = row.insertCell(2);
+              const cell4 = row.insertCell(3);
+              const cell5 = row.insertCell(4);
+              const cell6 = row.insertCell(5);
+
+              cell1.innerText = movie.movieName;
+              cell2.innerText = movie.rating;
+              cell3.innerText = movie.cast.join(", ");
+              cell4.innerText = movie.genre;
+              cell5.innerText = new Date(
+                movie.releaseDate
+              ).toLocaleDateString();
+
+              const deleteButton = document.createElement("button");
+              deleteButton.innerText = "Delete";
+              deleteButton.className = "w-70 btn btn-danger";
+              deleteButton.onclick = function () {
+                deleteMovie(movie.id);
+              };
+              cell6.className =
+                "d-flex justify-content-between align-items-center";
+              cell6.appendChild(deleteButton);
+              const editButton = document.createElement("button");
+              editButton.innerText = "Edit";
+              editButton.className = "w-70 btn btn-success ";
+              editButton.onclick = function () {
+                editMovie(movie);
+              };
+              cell6.appendChild(editButton);
+            });
+          })
+          .catch((error) => console.error("Error fetching movies:", error));
+      }
+
+      function deleteMovie(movieId) {
+        fetch(`/movies/${movieId}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: cookie.token ? cookie.token : "",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert("Movie deleted successfully!");
+            fetchMovies();
+          })
+          .catch((error) => {
+            console.error("Error deleting movie:", error);
+            alert(
+              "An error occurred while deleting the movie. Please try again."
+            );
+          });
+      }
+      fetchMovies();
+
+      function formatDate(inputDate) {
+        const date = new Date(inputDate);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
+      function editMovie(movie) {
+        console.log(movie);
+        const { id, movieName, rating, cast, genre, releaseDate } = movie;
+        document.getElementById("movieId").value = id;
+        document.getElementById("editMovieName").value = movieName;
+        document.getElementById("editRating").value = rating;
+        document.getElementById("editCast").value = cast.join(", ");
+        document.getElementById("editGenre").value = genre;
+        document.getElementById("editReleaseDate").value =
+          formatDate(releaseDate);
+        // console.log(releaseDate, new Date(releaseDate).toISOString());
+        $("#editMovieModal").modal("show");
+      }
+
+      function saveEditedMovie() {
+        // Extract edited movie details from the modal
+        const movieId = document.getElementById("movieId").value;
+        const movieName = document.getElementById("editMovieName").value;
+        const rating = document.getElementById("editRating").value;
+        const cast = document.getElementById("editCast").value.split(",");
+        const genre = document.getElementById("editGenre").value;
+        const releaseDate = document.getElementById("editReleaseDate").value;
+
+        const editedMovie = {
+          id: movieId,
+          movieName,
+          rating: Number(rating),
+          cast,
+          genre,
+          releaseDate: new Date(releaseDate).toISOString(),
+        };
+
+        fetch(`/movies/${movieId}`, {
+          method: "PUT", // Use PUT or PATCH depending on your server's API
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: cookie.token ? cookie.token : "",
+          },
+          body: JSON.stringify(editedMovie),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            alert("Movie edited successfully!");
+            fetchMovies();
+            $("#editMovieModal").modal("hide");
+          })
+          .catch((error) => {
+            console.error("Error editing movie:", error);
+            alert(
+              "An error occurred while editing the movie. Please try again."
+            );
+          });
+        $("#editMovieModal").modal("hide");
+      }
+    </script>
+  </body>
+</html>
